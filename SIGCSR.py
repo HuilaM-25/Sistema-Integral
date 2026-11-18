@@ -66,7 +66,7 @@ class GestorLogs:
 
 
 # Instancia única de logs, compartida por todo el sistema.
-logger = GestorLogs("sistema_logs.txt")
+logger = GestorLogs("registros_actividad_unad.txt")
 
 # EXCEPCIONES PERSONALIZADAS
 
