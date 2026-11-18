@@ -125,9 +125,9 @@ class Usuario:
     """Representa al usuario autorizado para ingresar al sistema."""
 
     def __init__(self):
-        # Credenciales por defecto (encapsuladas como atributos "protegidos").
-        self._usuario = "Grupo"
-        self._password = "1234"
+        # Credenciales !!!!!IMPORTANTE PARA INICIAR SESION!!!!!
+        self._usuario = "UNAD"
+        self._password = "UNAD2026"
 
     def validar(self, usuario_ingresado, password_ingresada):
         """Retorna True solo si usuario y contraseña coinciden."""
