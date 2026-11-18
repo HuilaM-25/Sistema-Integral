@@ -1,10 +1,22 @@
-# SIGCSR - Sistema Integral de Gestion de Clientes, Servisios y Reservas.
+# SIGCSR - Sistema Integral de Gestion de Clientes, Servicios y Reservas.
+# Empresa: Software FJ
 
-#Autor:________________________ Robinson Meneses__________
+# Autores:
+# Robinson Meneses CC 1007201017
+# Julian Coronado CC 1117486332
+# Santiago Murcia CC 1084897608
 
-import tkinter as tk
-from tkinter import messagebox
-from abc import ABC, abstractmethod
+# Descripción general del aplicativo:
+#   Aplicación de escritorio (Tkinter) que gestiona clientes, servicios y reservas
+#   completamente en memoria (objetos y listas). No usa motores de bases de datos;
+#   el único archivo que se escribe es el registro de eventos "sistema_logs.txt".
+
+import os                                   # Para ubicar el archivo de logs junto al script
+import math                                 # Para detectar valores no finitos (nan / inf)
+import tkinter as tk                        # Biblioteca gráfica estándar de Python
+from tkinter import messagebox              # Cuadros de diálogo (info / error)
+from datetime import datetime               # Fecha y hora para los logs
+from abc import ABC, abstractmethod         # Soporte para clases abstractas
 
 class Usuario:
     def __init__(self):
