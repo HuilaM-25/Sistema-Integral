@@ -770,3 +770,362 @@ def ejecutar_simulacion():
     resultados.append(resumen)
     logger.info(f"===== FIN DE LA SIMULACIÓN: {exitosas} exitosas, {fallidas} errores controlados =====")
     return resultados
+
+# INTERFAZ GRÁFICA GENERAL
+
+
+def ejecutar_accion_ui(titulo, accion):
+    """Ejecuta 'accion' mostrando mensajes y registrando logs; nunca deja caer la aplicación.
+
+    Devuelve True si la acción terminó sin errores.
+    """
+    try:
+        mensaje = accion()
+    except (SIGCSRError, ValueError) as error:
+        # Errores controlados: se informa al usuario y se registra.
+        logger.error(f"{titulo}: {type(error).__name__}: {error}")
+        messagebox.showerror(titulo, str(error))
+        return False
+    except Exception as error:
+        # Error inesperado: también se captura para no cerrar el programa.
+        logger.error(f"{titulo}: ERROR INESPERADO {type(error).__name__}: {error}")
+        messagebox.showerror(titulo, f"Ocurrió un error inesperado: {error}")
+        return False
+    else:
+        if mensaje:
+            messagebox.showinfo(titulo, str(mensaje))
+        return True
+
+
+def abrir_ventana_clientes():
+    """Robin:__________________Ventana Administrar clientes (registro y consulta)."""
+    ventana_clientes = tk.Toplevel(ventana)
+    ventana_clientes.title("Gestión de Clientes")
+    ventana_clientes.geometry("600x550")
+
+    tk.Label(ventana_clientes, text="GESTIÓN DE CLIENTES", font=("Arial", 16, "bold")).pack(pady=15)
+
+    tk.Label(ventana_clientes, text="Identificador").pack()
+    entrada_id = tk.Entry(ventana_clientes)
+    entrada_id.pack(pady=5)
+
+    tk.Label(ventana_clientes, text="Nombre").pack()
+    entrada_nombre = tk.Entry(ventana_clientes)
+    entrada_nombre.pack(pady=5)
+
+    tk.Label(ventana_clientes, text="Cédula").pack()
+    entrada_cedula = tk.Entry(ventana_clientes)
+    entrada_cedula.pack(pady=5)
+
+    tk.Label(ventana_clientes, text="Correo electrónico").pack()
+    entrada_correo = tk.Entry(ventana_clientes)
+    entrada_correo.pack(pady=5)
+
+    # Robin:________________________Funcion para registrar clientes
+    def registrar():
+        """Registra el cliente y limpia los campos si todo salió bien."""
+        ok = ejecutar_accion_ui("Registro", lambda: gestor_clientes.registrar_cliente(
+            entrada_id.get(), entrada_nombre.get(), entrada_cedula.get(), entrada_correo.get()))
+        if ok:
+            for entrada in (entrada_id, entrada_nombre, entrada_cedula, entrada_correo):
+                entrada.delete(0, tk.END)
+
+    # Robin:_______________Funcion de lista de clientes
+    def consultar():
+        """Muestra los clientes registrados en el Listbox."""
+        lista_clientes.delete(0, tk.END)
+        clientes = gestor_clientes.listar_clientes()
+
+        if not clientes:
+            messagebox.showinfo("Clientes", "Aún no hay clientes registrados.")
+            return
+        for cliente in clientes:
+            # Un Listbox muestra una línea por elemento: se une la info con " | ".
+            lista_clientes.insert(tk.END, cliente.mostrar_informacion().replace("\n", " | "))
+
+    tk.Button(ventana_clientes, text="Registrar Cliente", width=25, command=registrar).pack(pady=10)
+    tk.Button(ventana_clientes, text="Consultar Clientes", width=25, command=consultar).pack(pady=5)
+
+    # Robin:_______________Mostrar clientes.
+    lista_clientes = tk.Listbox(ventana_clientes, width=65, height=8)
+    lista_clientes.pack(pady=15)
+
+
+def abrir_ventana_servicios():
+    """Ventana para registrar, validar, listar servicios y cambiar su disponibilidad."""
+    v = tk.Toplevel(ventana)
+    v.title("Gestión de Servicios")
+    v.geometry("720x700")
+
+    tk.Label(v, text="GESTIÓN DE SERVICIOS", font=("Arial", 16, "bold")).pack(pady=10)
+
+    # Variable que guarda el tipo de servicio elegido (sala / equipo / asesoria).
+    tipo_var = tk.StringVar(value="sala")
+    marco_tipo = tk.Frame(v)
+    marco_tipo.pack()
+    etiquetas = tk.Label(v, text="")  # Se reemplaza más abajo; evita referencias antes de definirla
+
+    # Campos comunes a todos los servicios.
+    tk.Label(v, text="Código").pack()
+    e_codigo = tk.Entry(v)
+    e_codigo.pack(pady=3)
+    tk.Label(v, text="Nombre").pack()
+    e_nombre = tk.Entry(v)
+    e_nombre.pack(pady=3)
+    tk.Label(v, text="Tarifa base").pack()
+    e_tarifa = tk.Entry(v)
+    e_tarifa.pack(pady=3)
+
+    # Campos específicos: sus etiquetas cambian según el tipo.
+    lbl_extra1 = tk.Label(v, text="Capacidad (personas)")
+    lbl_extra1.pack()
+    e_extra1 = tk.Entry(v)
+    e_extra1.pack(pady=3)
+    lbl_extra2 = tk.Label(v, text="Nivel (solo asesoría: Junior/Senior/Experto)")
+    lbl_extra2.pack()
+    e_extra2 = tk.Entry(v)
+    e_extra2.pack(pady=3)
+    opcion_var = tk.BooleanVar(value=False)
+    chk_opcion = tk.Checkbutton(v, text="Incluye audiovisual", variable=opcion_var)
+    chk_opcion.pack(pady=3)
+
+    def cambiar_tipo():
+        """Ajusta los textos de los campos según el tipo de servicio elegido."""
+        tipo = tipo_var.get()
+        if tipo == "sala":
+            lbl_extra1.config(text="Capacidad (personas)")
+            chk_opcion.config(text="Incluye audiovisual", state="normal")
+        elif tipo == "equipo":
+            lbl_extra1.config(text="Cantidad de unidades")
+            chk_opcion.config(text="Incluye seguro", state="normal")
+        else:
+            lbl_extra1.config(text="Especialidad")
+            chk_opcion.config(text="(no aplica)", state="disabled")
+
+    # Botones de opción para elegir el tipo.
+    for texto, valor in (("Reserva de Sala", "sala"), ("Alquiler de Equipo", "equipo"),
+                         ("Asesoría Especializada", "asesoria")):
+        tk.Radiobutton(marco_tipo, text=texto, variable=tipo_var, value=valor,
+                       command=cambiar_tipo).pack(side=tk.LEFT, padx=8)
+    etiquetas.destroy()
+
+    lista = tk.Listbox(v, width=105, height=8)
+
+    def refrescar():
+        """Vuelve a cargar el Listbox con los servicios existentes."""
+        lista.delete(0, tk.END)
+        for s in gestor_servicios.listar_servicios():
+            lista.insert(tk.END, s.describir_servicio())
+
+    def registrar():
+        """Crea y registra el servicio con los datos del formulario."""
+        ok = ejecutar_accion_ui("Registro de servicio", lambda: gestor_servicios.crear_servicio(
+            tipo_var.get(), e_codigo.get(), e_nombre.get(), e_tarifa.get(),
+            e_extra1.get(), e_extra2.get(), opcion_var.get()))
+        if ok:
+            for e in (e_codigo, e_nombre, e_tarifa, e_extra1, e_extra2):
+                e.delete(0, tk.END)
+            refrescar()
+
+    def cambiar_disponibilidad():
+        """Activa/desactiva el servicio seleccionado en la lista."""
+        def accion():
+            seleccion = lista.curselection()
+            if not seleccion:
+                raise OperacionNoPermitidaError("Seleccione un servicio de la lista.")
+            servicio = gestor_servicios.listar_servicios()[seleccion[0]]
+            servicio.disponible = not servicio.disponible
+            logger.info(f"Disponibilidad de {servicio.codigo} cambiada a {servicio.disponible}.")
+            return f"Servicio {servicio.codigo}: {'disponible' if servicio.disponible else 'NO disponible'}."
+        if ejecutar_accion_ui("Disponibilidad", accion):
+            refrescar()
+
+    tk.Button(v, text="Registrar Servicio", width=28, command=registrar).pack(pady=6)
+    tk.Button(v, text="Listar Servicios", width=28, command=refrescar).pack(pady=3)
+    tk.Button(v, text="Cambiar disponibilidad (seleccionado)", width=28,
+              command=cambiar_disponibilidad).pack(pady=3)
+    lista.pack(pady=10)
+    refrescar()
+
+
+def abrir_ventana_reservas():
+    """Ventana para crear, confirmar, cancelar y consultar reservas."""
+    v = tk.Toplevel(ventana)
+    v.title("Gestión de Reservas")
+    v.geometry("720x650")
+
+    tk.Label(v, text="GESTIÓN DE RESERVAS", font=("Arial", 16, "bold")).pack(pady=10)
+
+    tk.Label(v, text="ID del cliente").pack()
+    e_cliente = tk.Entry(v)
+    e_cliente.pack(pady=3)
+    tk.Label(v, text="Código del servicio").pack()
+    e_servicio = tk.Entry(v)
+    e_servicio.pack(pady=3)
+    tk.Label(v, text="Duración (horas o días según el servicio)").pack()
+    e_duracion = tk.Entry(v)
+    e_duracion.pack(pady=3)
+    tk.Label(v, text="Recargo adicional (opcional)").pack()
+    e_recargo = tk.Entry(v)
+    e_recargo.pack(pady=3)
+
+    # Opciones de cálculo (variantes sobrecargadas del costo).
+    var_iva = tk.BooleanVar(value=False)
+    var_frecuente = tk.BooleanVar(value=False)
+    tk.Checkbutton(v, text="Aplicar IVA (19 %)", variable=var_iva).pack()
+    tk.Checkbutton(v, text="Cliente frecuente (-10 %)", variable=var_frecuente).pack()
+
+    lista = tk.Listbox(v, width=105, height=9)
+
+    def refrescar():
+        """Vuelve a cargar el Listbox con las reservas existentes."""
+        lista.delete(0, tk.END)
+        for r in gestor_reservas.listar_reservas():
+            lista.insert(tk.END, r.mostrar_informacion())
+
+    def reserva_seleccionada():
+        """Devuelve el ID de la reserva seleccionada o lanza un error controlado."""
+        seleccion = lista.curselection()
+        if not seleccion:
+            raise OperacionNoPermitidaError("Seleccione una reserva de la lista.")
+        return gestor_reservas.listar_reservas()[seleccion[0]].obtener_identificador()
+
+    def crear():
+        """Crea una reserva con los datos del formulario."""
+        def accion():
+            recargo = e_recargo.get().strip() or "0"
+            reserva = gestor_reservas.crear_reserva(
+                e_cliente.get(), e_servicio.get(), e_duracion.get(),
+                iva=var_iva.get(), cliente_frecuente=var_frecuente.get(), recargo=recargo)
+            return f"Reserva {reserva.obtener_identificador()} creada (Pendiente)."
+        if ejecutar_accion_ui("Crear reserva", accion):
+            for e in (e_cliente, e_servicio, e_duracion, e_recargo):
+                e.delete(0, tk.END)
+        refrescar()
+
+    def confirmar():
+        """Confirma la reserva seleccionada."""
+        ejecutar_accion_ui("Confirmar reserva",
+                           lambda: gestor_reservas.confirmar_reserva(reserva_seleccionada()))
+        refrescar()
+
+    def cancelar():
+        """Cancela la reserva seleccionada."""
+        ejecutar_accion_ui("Cancelar reserva",
+                           lambda: gestor_reservas.cancelar_reserva(reserva_seleccionada()))
+        refrescar()
+
+    tk.Button(v, text="Crear Reserva", width=28, command=crear).pack(pady=5)
+    tk.Button(v, text="Confirmar (seleccionada)", width=28, command=confirmar).pack(pady=3)
+    tk.Button(v, text="Cancelar (seleccionada)", width=28, command=cancelar).pack(pady=3)
+    tk.Button(v, text="Consultar Reservas", width=28, command=refrescar).pack(pady=3)
+    lista.pack(pady=10)
+    refrescar()
+
+
+def abrir_ventana_simulacion():
+    """Ejecuta la simulación de 20 operaciones y muestra el resultado en pantalla."""
+    v = tk.Toplevel(ventana)
+    v.title("Simulación de Pruebas")
+    v.geometry("820x600")
+    tk.Label(v, text="SIMULACIÓN DE OPERACIONES", font=("Arial", 14, "bold")).pack(pady=8)
+
+    # Cuadro de texto con barra de desplazamiento.
+    marco = tk.Frame(v)
+    marco.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+    barra = tk.Scrollbar(marco)
+    barra.pack(side=tk.RIGHT, fill=tk.Y)
+    texto = tk.Text(marco, wrap="word", yscrollcommand=barra.set)
+    texto.pack(fill=tk.BOTH, expand=True)
+    barra.config(command=texto.yview)
+
+    try:
+        lineas = ejecutar_simulacion()
+    except Exception as error:      # Salvaguarda final: la ventana nunca se cae
+        logger.error(f"Fallo general en la simulación: {error}")
+        lineas = [f"Error general controlado: {error}"]
+    texto.insert(tk.END, "\n".join(lineas))
+    texto.insert(tk.END, "\n\nLos detalles quedaron registrados en 'sistema_logs.txt'.")
+    texto.config(state="disabled")      # Solo lectura
+
+
+# Robin:________________________Funcion para abrir el sistema
+def abrir_sistema():
+    """Abre el menú principal con acceso a todos los módulos."""
+    ventana_principal = tk.Toplevel(ventana)
+    ventana_principal.title("Software SIGCSR - Main Menu")
+    ventana_principal.geometry("600x500")
+
+    tk.Label(ventana_principal, text="SISTEMA INTEGRAL", font=("Arial", 16, "bold")).pack(pady=12)
+    tk.Label(ventana_principal, text="S.I.G.C.S.R", font=("Arial", 16, "bold")).pack(pady=12)
+
+    tk.Button(ventana_principal, text="Clientes", width=25, command=abrir_ventana_clientes).pack(pady=10)
+    tk.Button(ventana_principal, text="Servicios", width=25, command=abrir_ventana_servicios).pack(pady=10)
+    tk.Button(ventana_principal, text="Reservas", width=25, command=abrir_ventana_reservas).pack(pady=10)
+    tk.Button(ventana_principal, text="Ejecutar Simulación de Pruebas", width=30,
+              command=abrir_ventana_simulacion).pack(pady=10)
+
+    def cerrar_todo():
+        """Al cerrar el menú principal se cierra la aplicación completa."""
+        logger.info("Sistema cerrado por el usuario.")
+        ventana.destroy()
+    ventana_principal.protocol("WM_DELETE_WINDOW", cerrar_todo)
+
+
+# Robin:________________________Funcion para iniciar sesion
+def iniciar_sesion():
+    """Valida las credenciales y abre el sistema si son correctas."""
+    usuario = entrada_usuario.get()
+    password = entrada_password.get()
+
+    usuario1 = Usuario()
+
+    if usuario1.validar(usuario, password):
+        logger.info(f"Inicio de sesión exitoso del usuario '{usuario}'.")
+        abrir_sistema()
+        ventana.withdraw()
+    else:
+        logger.error(f"Intento de inicio de sesión fallido (usuario '{usuario}').")
+        messagebox.showerror("Login", "Usuario o contraseña incorrectos")
+
+
+def manejar_excepcion_tk(tipo, valor, traza):
+    """Captura cualquier excepción no prevista dentro de un evento de Tkinter.
+
+    Así, aunque un callback falle, la aplicación sigue funcionando.
+    """
+    logger.error(f"Excepción no controlada en la interfaz: {tipo.__name__}: {valor}")
+    messagebox.showerror("Error", f"Ocurrió un error inesperado:\n{valor}")
+
+
+def main():
+    """Robin:_____________________Ventana de inicio de sesion o login."""
+    global ventana, entrada_usuario, entrada_password
+
+    ventana = tk.Tk()
+    ventana.title("Software SIGCSR - Login")
+    ventana.geometry("600x450")
+    # Cualquier error no previsto en un botón se registra y no cierra el programa.
+    ventana.report_callback_exception = manejar_excepcion_tk
+
+    tk.Label(ventana, text="INICIAR SESION", font=("Arial", 16, "bold")).pack(pady=12)
+
+    tk.Label(ventana, text="Usuario").pack(pady=10)
+    entrada_usuario = tk.Entry(ventana)
+    entrada_usuario.pack()
+
+    tk.Label(ventana, text="Contraseña").pack(pady=10)
+    entrada_password = tk.Entry(ventana, show="*")
+    entrada_password.pack()
+
+    boton_login = tk.Button(ventana, text="Login", command=iniciar_sesion)
+    boton_login.pack(pady=20)
+
+    logger.info("Sistema SIGCSR iniciado.")
+    ventana.mainloop()
+
+
+# Punto de entrada: solo se ejecuta al correr el archivo directamente.
+if __name__ == "__main__":
+    main()
+
