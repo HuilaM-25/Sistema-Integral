@@ -691,3 +691,82 @@ gestor_reservas = GestorReservas(gestor_clientes, gestor_servicios)
 ventana = None
 entrada_usuario = None
 entrada_password = None
+
+#SIMULACIÓN DE OPERACIONES
+
+
+def ejecutar_simulacion():
+    """Ejecuta 20 operaciones variadas y controladas; devuelve las líneas de resultado.
+
+    Usa gestores NUEVOS y aislados para que la simulación sea repetible y no
+    mezcle datos de prueba con los del usuario. Todo error se captura, se muestra
+    y se escribe en sistema_logs.txt sin interrumpir el programa.
+    """
+    logger.info("===== INICIO DE LA SIMULACIÓN DE PRUEBAS =====")
+    gc = GestorClientes()
+    gs = GestorServicios()
+    gr = GestorReservas(gc, gs)
+    resultados = []         # Líneas que se mostrarán en pantalla
+    contador = [0]          # Lista para poder modificarlo dentro de la función interna
+
+    def paso(descripcion, accion):
+        """Ejecuta una operación, captura cualquier error y anota el resultado."""
+        contador[0] += 1
+        etiqueta = f"{contador[0]:02d}. {descripcion}"
+        try:
+            salida = accion()
+        except (SIGCSRError, ValueError) as error:
+            # Errores esperados (propios del sistema o de validación de clientes).
+            logger.error(f"[Simulación] {descripcion}: {type(error).__name__}: {error}")
+            resultados.append(f"✘ {etiqueta}\n      Error controlado -> {type(error).__name__}: {error}")
+        except Exception as error:      # Red de seguridad: nada detiene la simulación
+            logger.error(f"[Simulación] Error inesperado en '{descripcion}': {error}")
+            resultados.append(f"✘ {etiqueta}\n      Error inesperado -> {error}")
+        else:
+            logger.info(f"[Simulación] {descripcion}: OK")
+            resultados.append(f"✔ {etiqueta}\n      Resultado -> {salida}")
+
+    def no_disponible_y_reservar():
+        """Marca el equipo como no disponible y luego intenta reservarlo."""
+        gs.buscar_servicio("E001").disponible = False
+        return gr.crear_reserva("C002", "E001", "2")
+
+    def variantes_costo():
+        """Muestra la sobrecarga del cálculo: mismo servicio, distintas variantes."""
+        sala = gs.buscar_servicio("S001")
+        base = sala.calcular_costo(2)
+        con_iva = sala.calcular_costo(2, True)
+        completo = sala.calcular_costo(2, iva=True, cliente_frecuente=True, recargo=20000)
+        return f"Base ${base:,.0f} | Con IVA ${con_iva:,.0f} | IVA+descuento+recargo ${completo:,.0f}"
+
+    # --- Clientes ---
+    paso("Cliente válido (Ana)", lambda: gc.registrar_cliente("C001", "Ana Pérez", "1001234567", "ana@correo.com"))
+    paso("Cliente inválido (cédula con letras)", lambda: gc.registrar_cliente("C002", "Luis Gómez", "12ab", "luis@correo.com"))
+    paso("Cliente duplicado (ID repetido)", lambda: gc.registrar_cliente("C001", "Otra Ana", "1000000000", "otra@correo.com"))
+    paso("Cliente válido (Luis)", lambda: gc.registrar_cliente("C002", "Luis Gómez", "1098765432", "luis@correo.com"))
+    # --- Servicios ---
+    paso("ReservaSala válida", lambda: gs.crear_servicio("sala", "S001", "Sala Ejecutiva", "80000", "20", opcion=True))
+    paso("ReservaSala con capacidad inválida (0)", lambda: gs.crear_servicio("sala", "S002", "Sala Mini", "50000", "0"))
+    paso("AlquilerEquipo válido", lambda: gs.crear_servicio("equipo", "E001", "Videobeam", "30000", "3", opcion=True))
+    paso("AlquilerEquipo con cantidad faltante", lambda: gs.crear_servicio("equipo", "E002", "Portátil", "40000", ""))
+    paso("AsesoriaEspecializada válida", lambda: gs.crear_servicio("asesoria", "A001", "Asesoría Cloud", "120000", "Computación en la nube", "Senior"))
+    paso("AsesoriaEspecializada sin especialidad", lambda: gs.crear_servicio("asesoria", "A002", "Asesoría Datos", "100000", "", "Junior"))
+    # --- Reservas ---
+    paso("Reserva exitosa (Ana, sala, 3 h, con IVA)", lambda: gr.crear_reserva("C001", "S001", "3", iva=True).mostrar_informacion())
+    paso("Confirmar reserva R001", lambda: gr.confirmar_reserva("R001"))
+    paso("Reserva con servicio no disponible", no_disponible_y_reservar)
+    paso("Reserva con duración faltante", lambda: gr.crear_reserva("C001", "A001", ""))
+    paso("Reserva con duración fuera de rango (50 h)", lambda: gr.crear_reserva("C002", "S001", "50").mostrar_informacion())
+    paso("Confirmar R002 (debe fallar por duración)", lambda: gr.confirmar_reserva("R002"))
+    paso("Cancelar reserva R002", lambda: gr.cancelar_reserva("R002"))
+    paso("Cancelar R002 por segunda vez", lambda: gr.cancelar_reserva("R002"))
+    paso("Reserva con cliente inexistente", lambda: gr.crear_reserva("C999", "S001", "2"))
+    paso("Cálculo con variantes (sobrecarga IVA/descuento/recargo)", variantes_costo)
+
+    exitosas = sum(1 for linea in resultados if linea.startswith("✔"))
+    fallidas = len(resultados) - exitosas
+    resumen = (f"\nResumen: {len(resultados)} operaciones | {exitosas} exitosas | "
+               f"{fallidas} errores controlados | El programa NO se interrumpió.")
+    resultados.append(resumen)
+    logger.info(f"===== FIN DE LA SIMULACIÓN: {exitosas} exitosas, {fallidas} errores controlados =====")
+    return resultados
