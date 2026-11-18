@@ -513,4 +513,181 @@ class GestorServicios:
         """Devuelve una copia de la lista de servicios."""
         return self.__servicios.copy()
 
+# MÓDULO DE RESERVAS
 
+
+class Reserva(Entidad):
+    """Reserva que une un Cliente, un Servicio, una duración y un estado."""
+
+    PENDIENTE = "Pendiente"
+    CONFIRMADA = "Confirmada"
+    CANCELADA = "Cancelada"
+
+    def __init__(self, identificador, cliente, servicio, duracion, **opciones):
+        super().__init__(identificador)
+        # Se valida que los objetos recibidos sean del tipo correcto.
+        if not isinstance(cliente, Cliente):
+            raise ReservaInvalidaError("La reserva requiere un cliente válido.")
+        if not isinstance(servicio, Servicio):
+            raise ReservaInvalidaError("La reserva requiere un servicio válido.")
+        # La duración debe ser un número positivo.
+        duracion_num = convertir_numero(duracion, "duración")
+        if duracion_num <= 0:
+            raise ReservaInvalidaError("La duración debe ser mayor que cero.")
+
+        self.__cliente = cliente
+        self.__servicio = servicio
+        self.__duracion = duracion_num
+        self.__opciones = opciones          # iva / cliente_frecuente / recargo
+        self.__estado = self.PENDIENTE      # Toda reserva nace Pendiente
+        self.__total = 0.0
+
+    @property
+    def estado(self):
+        """Estado actual de la reserva."""
+        return self.__estado
+
+    @property
+    def total(self):
+        """Total calculado (0 hasta que se procese)."""
+        return self.__total
+
+    @property
+    def servicio(self):
+        """Servicio reservado."""
+        return self.__servicio
+
+    def procesar_reserva(self):
+        """Valida disponibilidad, duración y consistencia del cálculo; guarda el total.
+
+        Usa try / except / else / finally y encadenamiento de excepciones.
+        """
+        logger.info(f"Procesando reserva {self.obtener_identificador()}...")
+        try:
+            # 1) El servicio debe estar disponible.
+            if not self.__servicio.disponible:
+                raise ServicioNoDisponibleError(
+                    f"El servicio '{self.__servicio.codigo}' no está disponible."
+                )
+            # 2) La duración debe ser válida.
+            if self.__duracion <= 0:
+                raise ReservaInvalidaError("La duración de la reserva no es válida.")
+            # 3) Cálculo del costo; los errores aritméticos/de tipo se encadenan.
+            try:
+                total = self.__servicio.calcular_costo(self.__duracion, **self.__opciones)
+            except (TypeError, ArithmeticError) as error_original:
+                raise CalculoInconsistenteError(
+                    "No fue posible calcular el costo de la reserva."
+                ) from error_original
+            # 4) El total debe ser un número finito y positivo.
+            if (not isinstance(total, (int, float)) or math.isnan(total)
+                    or math.isinf(total) or total <= 0):
+                raise CalculoInconsistenteError(f"Total inconsistente: {total}.")
+        except SIGCSRError as error:
+            # Se deja constancia del fallo y se relanza.
+            logger.error(f"Reserva {self.obtener_identificador()} no procesada: "
+                         f"{type(error).__name__}: {error}")
+            raise
+        else:
+            # Solo si todo salió bien se guarda el total.
+            self.__total = total
+            logger.info(f"Reserva {self.obtener_identificador()} procesada. Total: ${total:,.2f}")
+            return total
+        finally:
+            # Se ejecuta SIEMPRE, haya o no error.
+            logger.info(f"Fin del procesamiento de la reserva {self.obtener_identificador()}.")
+
+    def confirmar(self):
+        """Confirma la reserva (solo si está Pendiente y se procesa correctamente)."""
+        try:
+            if self.__estado == self.CANCELADA:
+                raise OperacionNoPermitidaError("No se puede confirmar una reserva cancelada.")
+            if self.__estado == self.CONFIRMADA:
+                raise OperacionNoPermitidaError("La reserva ya está confirmada.")
+            self.procesar_reserva()
+        except SIGCSRError as error:
+            logger.error(f"Confirmación fallida de {self.obtener_identificador()}: "
+                         f"{type(error).__name__}: {error}")
+            raise
+        else:
+            self.__estado = self.CONFIRMADA
+            logger.info(f"Reserva {self.obtener_identificador()} CONFIRMADA.")
+            return "Reserva confirmada correctamente."
+
+    def cancelar(self):
+        """Cancela la reserva (no se puede cancelar dos veces)."""
+        try:
+            if self.__estado == self.CANCELADA:
+                raise OperacionNoPermitidaError("La reserva ya estaba cancelada.")
+        except OperacionNoPermitidaError as error:
+            logger.error(f"Cancelación fallida de {self.obtener_identificador()}: {error}")
+            raise
+        else:
+            self.__estado = self.CANCELADA
+            logger.info(f"Reserva {self.obtener_identificador()} CANCELADA.")
+            return "Reserva cancelada correctamente."
+
+    def mostrar_informacion(self):
+        """Resumen de una línea de la reserva."""
+        return (f"{self.obtener_identificador()} | Cliente: {self.__cliente.obtener_nombre()} | "
+                f"Servicio: {self.__servicio.nombre} | Duración: {self.__duracion:g} | "
+                f"Estado: {self.__estado} | Total: ${self.__total:,.2f}")
+
+
+class GestorReservas:
+    """Crea y administra reservas usando los gestores de clientes y servicios."""
+
+    def __init__(self, gestor_clientes, gestor_servicios):
+        self.__reservas = []
+        self.__gc = gestor_clientes
+        self.__gs = gestor_servicios
+        self.__contador = 0                 # Para generar IDs R001, R002...
+
+    def crear_reserva(self, id_cliente, codigo_servicio, duracion, **opciones):
+        """Crea una reserva Pendiente validando cliente, servicio y duración."""
+        try:
+            cliente = self.__gc.buscar_cliente(id_cliente)           # Puede lanzar ReservaInvalidaError
+            servicio = self.__gs.buscar_servicio(codigo_servicio)    # Puede lanzar ServicioNoDisponibleError
+            if not servicio.disponible:
+                raise ServicioNoDisponibleError(f"El servicio '{codigo_servicio}' no está disponible.")
+            identificador = f"R{self.__contador + 1:03d}"
+            reserva = Reserva(identificador, cliente, servicio, duracion, **opciones)
+        except SIGCSRError as error:
+            logger.error(f"Creación de reserva fallida: {type(error).__name__}: {error}")
+            raise
+        else:
+            self.__contador += 1
+            self.__reservas.append(reserva)
+            logger.info(f"Reserva {identificador} creada (Pendiente) para cliente {id_cliente}.")
+            return reserva
+
+    def buscar_reserva(self, identificador):
+        """Devuelve la reserva con ese ID o lanza ReservaInvalidaError."""
+        for reserva in self.__reservas:
+            if reserva.obtener_identificador() == str(identificador).strip():
+                return reserva
+        raise ReservaInvalidaError(f"No existe la reserva '{identificador}'.")
+
+    def confirmar_reserva(self, identificador):
+        """Confirma una reserva existente."""
+        return self.buscar_reserva(identificador).confirmar()
+
+    def cancelar_reserva(self, identificador):
+        """Cancela una reserva existente."""
+        return self.buscar_reserva(identificador).cancelar()
+
+    def listar_reservas(self):
+        """Devuelve una copia de la lista de reservas."""
+        return self.__reservas.copy()
+
+
+# Gestores globales usados por la interfaz gráfica.
+# Robin:__________________Ventana Abministrar clientes.
+gestor_clientes = GestorClientes()
+gestor_servicios = GestorServicios()
+gestor_reservas = GestorReservas(gestor_clientes, gestor_servicios)
+
+# Ventanas de Tkinter (se crean en main()).
+ventana = None
+entrada_usuario = None
+entrada_password = None
