@@ -68,6 +68,65 @@ class GestorLogs:
 # Instancia única de logs, compartida por todo el sistema.
 logger = GestorLogs("sistema_logs.txt")
 
+# EXCEPCIONES PERSONALIZADAS
+
+
+class SIGCSRError(Exception):
+    """Excepción base del sistema: todas las excepciones propias heredan de ella."""
+
+
+class ParametroFaltanteError(SIGCSRError):
+    """Se lanza cuando falta un dato obligatorio (vacío o None)."""
+
+
+class ParametroInvalidoError(SIGCSRError):
+    """Se lanza cuando un dato existe pero su valor/formato no es válido."""
+
+
+class ServicioNoDisponibleError(SIGCSRError):
+    """Se lanza cuando el servicio no existe o está marcado como no disponible."""
+
+
+class ReservaInvalidaError(SIGCSRError):
+    """Se lanza cuando una reserva tiene datos inconsistentes (duración, cliente...)."""
+
+
+class OperacionNoPermitidaError(SIGCSRError):
+    """Se lanza cuando una operación no es válida para el estado actual del objeto."""
+
+
+class CalculoInconsistenteError(SIGCSRError):
+    """Se lanza cuando el cálculo de un costo produce un resultado no coherente."""
+
+
+def convertir_numero(valor, nombre_campo, entero=False):
+    """Convierte 'valor' a número validando que exista y que sea numérico.
+
+    - Lanza ParametroFaltanteError si el valor es None o texto vacío.
+    - Lanza ParametroInvalidoError (encadenada con 'from') si no es convertible.
+    """
+    # Un valor None o una cadena en blanco equivale a "dato faltante".
+    if valor is None or not str(valor).strip():
+        raise ParametroFaltanteError(f"Falta el parámetro obligatorio: {nombre_campo}.")
+    try:
+        # Se convierte a entero o decimal según lo solicitado.
+        return int(str(valor).strip()) if entero else float(str(valor).strip())
+    except (TypeError, ValueError) as error_original:
+        # ENCADENAMIENTO DE EXCEPCIONES: la nueva excepción conserva la causa original.
+        tipo = "un número entero" if entero else "un número"
+        raise ParametroInvalidoError(
+            f"El campo '{nombre_campo}' debe ser {tipo}."
+        ) from error_original
+
+
+
+
+
+
+
+
+
+
 class Usuario:
     def __init__(self):
         self._usuario = "Grupo"
