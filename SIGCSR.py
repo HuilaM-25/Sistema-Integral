@@ -18,6 +18,56 @@ from tkinter import messagebox              # Cuadros de diálogo (info / error)
 from datetime import datetime               # Fecha y hora para los logs
 from abc import ABC, abstractmethod         # Soporte para clases abstractas
 
+
+# SISTEMA DE LOGS (archivo plano sistema_logs.txt)
+
+
+class GestorLogs:
+    """Escribe eventos en un archivo de texto plano con fecha, hora, nivel y descripción.
+
+    Nunca lanza excepciones hacia el resto del sistema: si no puede escribir en el
+    archivo, lo informa por consola y continúa (el programa no debe detenerse).
+    """
+
+    def __init__(self, nombre_archivo="sistema_logs.txt"):
+        # Ruta absoluta: el archivo se crea en la misma carpeta que este script.
+        carpeta = os.path.dirname(os.path.abspath(__file__))
+        self.__ruta = os.path.join(carpeta, nombre_archivo)
+
+    def registrar(self, nivel, descripcion):
+        """Agrega una línea al log con el formato: FECHA HORA | NIVEL | DESCRIPCIÓN."""
+        # Marca de tiempo legible con fecha y hora.
+        marca = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        # Se reemplazan saltos de línea para que cada evento ocupe una sola línea.
+        texto = str(descripcion).replace("\n", " | ")
+        linea = f"{marca} | {nivel:<5} | {texto}\n"
+        try:
+            # Modo "a" (append): conserva lo escrito anteriormente.
+            archivo = open(self.__ruta, "a", encoding="utf-8")
+        except OSError as error:
+            # Si el archivo no se puede abrir, solo se avisa por consola.
+            print(f"[LOG NO DISPONIBLE] {error}")
+        else:
+            # try / except / else / finally: se escribe y SIEMPRE se cierra el archivo.
+            try:
+                archivo.write(linea)
+            except OSError as error:
+                print(f"[LOG NO ESCRITO] {error}")
+            finally:
+                archivo.close()
+
+    def info(self, descripcion):
+        """Registra un evento informativo (operación exitosa o evento relevante)."""
+        self.registrar("INFO", descripcion)
+
+    def error(self, descripcion):
+        """Registra un error o excepción capturada."""
+        self.registrar("ERROR", descripcion)
+
+
+# Instancia única de logs, compartida por todo el sistema.
+logger = GestorLogs("sistema_logs.txt")
+
 class Usuario:
     def __init__(self):
         self._usuario = "Grupo"
