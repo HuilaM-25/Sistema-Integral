@@ -2,9 +2,10 @@
 # Empresa: Software FJ
 
 # Autores:
-# Robinson Meneses CC 1007201017
 # Julian Coronado CC 1117486332
+# Robinson Meneses CC 1007201017
 # Santiago Murcia CC 1084897608
+# Paula Andrea Diaz CC 1007741168
 
 # Descripción general del aplicativo:
 #   Aplicación de escritorio (Tkinter) que gestiona clientes, servicios y reservas
@@ -18,9 +19,7 @@ from tkinter import messagebox              # Cuadros de diálogo (info / error)
 from datetime import datetime               # Fecha y hora para los logs
 from abc import ABC, abstractmethod         # Soporte para clases abstractas
 
-
-# SISTEMA DE LOGS (archivo plano registros_actividad_unad.txt)
-
+# SISTEMA DE LOGS (archivo plano registros_actividad_unad.txt)!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 class GestorLogs:
     """Escribe eventos en un archivo de texto plano con fecha, hora, nivel y descripción.
@@ -63,45 +62,28 @@ class GestorLogs:
     def error(self, descripcion):
         """Registra un error o excepción capturada."""
         self.registrar("ERROR", descripcion)
-
-
+        
 # Instancia única de logs, compartida por todo el sistema.
 logger = GestorLogs("registros_actividad_unad.txt")
 
-# EXCEPCIONES PERSONALIZADAS
-
+# EXCEPCIONES PERSONALIZADAS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 class SIGCSRError(Exception):
     """Excepción base del sistema: todas las excepciones propias heredan de ella."""
-
-
 class ParametroFaltanteError(SIGCSRError):
     """Se lanza cuando falta un dato obligatorio (vacío o None)."""
-
-
 class ParametroInvalidoError(SIGCSRError):
     """Se lanza cuando un dato existe pero su valor/formato no es válido."""
-
-
 class ServicioNoDisponibleError(SIGCSRError):
     """Se lanza cuando el servicio no existe o está marcado como no disponible."""
-
-
 class ReservaInvalidaError(SIGCSRError):
     """Se lanza cuando una reserva tiene datos inconsistentes (duración, cliente...)."""
-
-
 class OperacionNoPermitidaError(SIGCSRError):
     """Se lanza cuando una operación no es válida para el estado actual del objeto."""
-
-
 class CalculoInconsistenteError(SIGCSRError):
     """Se lanza cuando el cálculo de un costo produce un resultado no coherente."""
-
-
 def convertir_numero(valor, nombre_campo, entero=False):
     """Convierte 'valor' a número validando que exista y que sea numérico.
-
     - Lanza ParametroFaltanteError si el valor es None o texto vacío.
     - Lanza ParametroInvalidoError (encadenada con 'from') si no es convertible.
     """
@@ -118,8 +100,7 @@ def convertir_numero(valor, nombre_campo, entero=False):
             f"El campo '{nombre_campo}' debe ser {tipo}."
         ) from error_original
 
-# USUARIO Y ARQUITECTURA BASE
-
+# USUARIO Y ARQUITECTURA BASE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 class Usuario:
     """Representa al usuario autorizado para ingresar al sistema."""
@@ -132,7 +113,6 @@ class Usuario:
     def validar(self, usuario_ingresado, password_ingresada):
         """Retorna True solo si usuario y contraseña coinciden."""
         return usuario_ingresado == self._usuario and password_ingresada == self._password
-
 
 # Clase abstracta sistema
 class Entidad(ABC):
@@ -151,9 +131,7 @@ class Entidad(ABC):
         """Cada entidad concreta debe devolver su información como texto."""
         pass
 
-
-# MÓDULO DE CLIENTES + LOGS
-
+# MÓDULO DE CLIENTES + LOGS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 class Cliente(Entidad):
     """Cliente de Software FJ con datos encapsulados y validados."""
@@ -192,7 +170,6 @@ class Cliente(Entidad):
             f"Correo: {self.__correo}"
         )
 
-
 # Gestion de clientes.
 class GestorClientes:
     """Almacena y administra los clientes en una lista privada (memoria)."""
@@ -230,14 +207,11 @@ class GestorClientes:
                 return cliente
         raise ReservaInvalidaError(f"No existe un cliente con ID '{identificador}'.")
 
-
-#MÓDULO DE SERVICIOS
-
+#MÓDULO DE SERVICIOS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 # Constantes del negocio usadas en las variantes de cálculo.
 TASA_IVA = 0.19                 # IVA del 19 %
 DESCUENTO_FRECUENTE = 0.10      # 10 % de descuento a clientes frecuentes
-
 
 class Servicio(Entidad):
     """Clase abstracta de un servicio ofrecido por Software FJ.
@@ -387,7 +361,6 @@ class ReservaSala(Servicio):
         return (f"[Sala] {self.codigo} - {self.nombre} | Cap: {self.__capacidad} | "
                 f"{av} | ${self.tarifa_base:,.0f}/hora | {estado}")
 
-
 class AlquilerEquipo(Servicio):
     """Alquiler de equipos: tarifa por unidad y por día, con seguro opcional."""
 
@@ -425,7 +398,6 @@ class AlquilerEquipo(Servicio):
         return (f"[Equipo] {self.codigo} - {self.nombre} | Unid: {self.__cantidad} | "
                 f"{seg} | ${self.tarifa_base:,.0f}/unidad-día | {estado}")
 
-
 class AsesoriaEspecializada(Servicio):
     """Asesoría profesional: tarifa por hora multiplicada según el nivel del asesor."""
 
@@ -460,7 +432,6 @@ class AsesoriaEspecializada(Servicio):
         estado = "Disponible" if self.disponible else "NO disponible"
         return (f"[Asesoría] {self.codigo} - {self.nombre} | {self.__especialidad} | "
                 f"Nivel: {self.__nivel.title()} | ${self.tarifa_base:,.0f}/hora | {estado}")
-
 
 class GestorServicios:
     """Administra los servicios registrados (lista privada en memoria)."""
@@ -513,8 +484,7 @@ class GestorServicios:
         """Devuelve una copia de la lista de servicios."""
         return self.__servicios.copy()
 
-# MÓDULO DE RESERVAS
-
+# MÓDULO DE RESERVAS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 class Reserva(Entidad):
     """Reserva que une un Cliente, un Servicio, una duración y un estado."""
@@ -633,7 +603,6 @@ class Reserva(Entidad):
                 f"Servicio: {self.__servicio.nombre} | Duración: {self.__duracion:g} | "
                 f"Estado: {self.__estado} | Total: ${self.__total:,.2f}")
 
-
 class GestorReservas:
     """Crea y administra reservas usando los gestores de clientes y servicios."""
 
@@ -680,7 +649,6 @@ class GestorReservas:
         """Devuelve una copia de la lista de reservas."""
         return self.__reservas.copy()
 
-
 # Gestores globales usados por la interfaz gráfica.
 # Ventana Abministrar clientes.
 gestor_clientes = GestorClientes()
@@ -693,7 +661,6 @@ entrada_usuario = None
 entrada_password = None
 
 #SIMULACIÓN DE OPERACIONES
-
 
 def ejecutar_simulacion():
     """Ejecuta 20 operaciones variadas y controladas; devuelve las líneas de resultado.
@@ -771,8 +738,7 @@ def ejecutar_simulacion():
     logger.info(f"===== FIN DE LA SIMULACIÓN: {exitosas} exitosas, {fallidas} errores controlados =====")
     return resultados
 
-# INTERFAZ GRÁFICA GENERAL
-
+# INTERFAZ GRÁFICA GENERAL!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 def ejecutar_accion_ui(titulo, accion):
     """Ejecuta 'accion' mostrando mensajes y registrando logs; nunca deja caer la aplicación.
@@ -1123,7 +1089,6 @@ def main():
 
     logger.info("Sistema SIGCSR iniciado.")
     ventana.mainloop()
-
 
 # Punto de entrada: solo se ejecuta al correr el archivo directamente.
 if __name__ == "__main__":
