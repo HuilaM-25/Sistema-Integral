@@ -231,6 +231,286 @@ class GestorClientes:
         raise ReservaInvalidaError(f"No existe un cliente con ID '{identificador}'.")
 
 
+#MÓDULO DE SERVICIOS
 
+
+# Constantes del negocio usadas en las variantes de cálculo.
+TASA_IVA = 0.19                 # IVA del 19 %
+DESCUENTO_FRECUENTE = 0.10      # 10 % de descuento a clientes frecuentes
+
+
+class Servicio(Entidad):
+    """Clase abstracta de un servicio ofrecido por Software FJ.
+
+    El código del servicio se guarda como identificador de la entidad padre.
+    """
+
+    def __init__(self, codigo, nombre, tarifa_base, disponible=True):
+        # Validación del código (dato obligatorio).
+        if codigo is None or not str(codigo).strip():
+            raise ParametroFaltanteError("El código del servicio es obligatorio.")
+        super().__init__(str(codigo).strip())
+
+        # Validación del nombre (dato obligatorio).
+        if nombre is None or not str(nombre).strip():
+            raise ParametroFaltanteError("El nombre del servicio es obligatorio.")
+
+        # La tarifa debe ser numérica y positiva.
+        tarifa = convertir_numero(tarifa_base, "tarifa base")
+        if tarifa <= 0:
+            raise ParametroInvalidoError("La tarifa base debe ser mayor que cero.")
+
+        # Atributos encapsulados (privados).
+        self.__nombre = str(nombre).strip()
+        self.__tarifa_base = tarifa
+        self.__disponible = bool(disponible)
+
+    # ---- Propiedades (acceso controlado a los atributos privados) ----
+    @property
+    def codigo(self):
+        """Código único del servicio."""
+        return self.obtener_identificador()
+
+    @property
+    def nombre(self):
+        """Nombre del servicio."""
+        return self.__nombre
+
+    @property
+    def tarifa_base(self):
+        """Tarifa base (por hora o por unidad/día según el servicio)."""
+        return self.__tarifa_base
+
+    @property
+    def disponible(self):
+        """Indica si el servicio puede reservarse."""
+        return self.__disponible
+
+    @disponible.setter
+    def disponible(self, valor):
+        """Permite activar o desactivar el servicio."""
+        self.__disponible = bool(valor)
+
+    # ---- Métodos abstractos (cada hijo los sobrescribe: POLIMORFISMO) ----
+    @abstractmethod
+    def calcular_costo(self, duracion, *args, **kwargs):
+        """Calcula el costo total. Sobrecargado con *args/**kwargs (iva, cliente_frecuente, recargo)."""
+
+    @abstractmethod
+    def describir_servicio(self):
+        """Devuelve una descripción de una línea del servicio."""
+
+    @abstractmethod
+    def validar_parametros(self):
+        """Valida los parámetros propios del servicio; lanza excepciones propias si falla."""
+
+    # ---- Utilidades comunes para la SOBRECARGA de cálculo ----
+    @staticmethod
+    def _extraer_variantes(args, kwargs):
+        """Interpreta las variantes de cálculo recibidas por posición (*args) o nombre (**kwargs).
+
+        Orden posicional admitido: (iva, cliente_frecuente, recargo).
+        Ejemplos válidos:
+            calcular_costo(3)                          -> sin variantes
+            calcular_costo(3, True)                    -> con IVA
+            calcular_costo(3, True, True, 15000)       -> IVA + descuento + recargo
+            calcular_costo(3, cliente_frecuente=True)  -> solo descuento
+        """
+        nombres = ("iva", "cliente_frecuente", "recargo")
+        if len(args) > len(nombres):
+            raise ParametroInvalidoError("Demasiados parámetros opcionales en el cálculo.")
+        # Valores por defecto de cada variante.
+        opciones = {"iva": False, "cliente_frecuente": False, "recargo": 0.0}
+        # Se asignan los argumentos posicionales en orden.
+        opciones.update(zip(nombres, args))
+        # Se asignan los argumentos con nombre, rechazando los desconocidos.
+        for clave, valor in kwargs.items():
+            if clave not in opciones:
+                raise ParametroInvalidoError(f"Opción de cálculo desconocida: '{clave}'.")
+            opciones[clave] = valor
+        return opciones
+
+    @staticmethod
+    def _aplicar_variantes(subtotal, opciones):
+        """Aplica descuento, recargo adicional e IVA sobre el subtotal calculado."""
+        recargo = convertir_numero(opciones["recargo"], "recargo")
+        if recargo < 0:
+            raise ParametroInvalidoError("El recargo adicional no puede ser negativo.")
+        total = subtotal
+        if opciones["cliente_frecuente"]:
+            total -= subtotal * DESCUENTO_FRECUENTE    # Descuento por cliente frecuente
+        total += recargo                               # Recargo adicional
+        if opciones["iva"]:
+            total *= (1 + TASA_IVA)                    # Impuesto (IVA)
+        return round(total, 2)
+
+    def mostrar_informacion(self):
+        """Implementa el método abstracto de Entidad usando la descripción del servicio."""
+        return self.describir_servicio()
+
+
+class ReservaSala(Servicio):
+    """Reserva de salas: tarifa por hora, con capacidad y recargo por equipo audiovisual."""
+
+    MAX_HORAS = 12                  # Máximo de horas por reserva
+    MAX_CAPACIDAD = 200             # Capacidad máxima admitida
+    RECARGO_AUDIOVISUAL = 0.15      # 15 % del subtotal si incluye audiovisuales
+
+    def __init__(self, codigo, nombre, tarifa_base, capacidad, audiovisual=False, disponible=True):
+        super().__init__(codigo, nombre, tarifa_base, disponible)
+        self.__capacidad = convertir_numero(capacidad, "capacidad", entero=True)
+        self.__audiovisual = bool(audiovisual)
+        # Se validan los parámetros propios apenas se crea el objeto.
+        self.validar_parametros()
+
+    def validar_parametros(self):
+        """La capacidad debe estar entre 1 y MAX_CAPACIDAD personas."""
+        if not 1 <= self.__capacidad <= self.MAX_CAPACIDAD:
+            raise ParametroInvalidoError(
+                f"La capacidad debe estar entre 1 y {self.MAX_CAPACIDAD} personas."
+            )
+
+    def calcular_costo(self, duracion, *args, **kwargs):
+        """Costo = tarifa x horas (+15 % si hay audiovisual), más variantes opcionales."""
+        horas = convertir_numero(duracion, "horas")
+        if not 0 < horas <= self.MAX_HORAS:
+            raise ReservaInvalidaError(f"Las horas deben estar entre 1 y {self.MAX_HORAS}.")
+        subtotal = self.tarifa_base * horas
+        if self.__audiovisual:
+            subtotal += subtotal * self.RECARGO_AUDIOVISUAL
+        return self._aplicar_variantes(subtotal, self._extraer_variantes(args, kwargs))
+
+    def describir_servicio(self):
+        """Descripción en una línea."""
+        av = "con audiovisual" if self.__audiovisual else "sin audiovisual"
+        estado = "Disponible" if self.disponible else "NO disponible"
+        return (f"[Sala] {self.codigo} - {self.nombre} | Cap: {self.__capacidad} | "
+                f"{av} | ${self.tarifa_base:,.0f}/hora | {estado}")
+
+
+class AlquilerEquipo(Servicio):
+    """Alquiler de equipos: tarifa por unidad y por día, con seguro opcional."""
+
+    MAX_CANTIDAD = 100              # Máximo de unidades por alquiler
+    MAX_DIAS = 30                   # Máximo de días por alquiler
+    TASA_SEGURO = 0.08              # 8 % del subtotal si se contrata seguro
+
+    def __init__(self, codigo, nombre, tarifa_base, cantidad, seguro=False, disponible=True):
+        super().__init__(codigo, nombre, tarifa_base, disponible)
+        self.__cantidad = convertir_numero(cantidad, "cantidad", entero=True)
+        self.__seguro = bool(seguro)
+        self.validar_parametros()
+
+    def validar_parametros(self):
+        """La cantidad de unidades debe estar entre 1 y MAX_CANTIDAD."""
+        if not 1 <= self.__cantidad <= self.MAX_CANTIDAD:
+            raise ParametroInvalidoError(
+                f"La cantidad debe estar entre 1 y {self.MAX_CANTIDAD} unidades."
+            )
+
+    def calcular_costo(self, duracion, *args, **kwargs):
+        """Costo = tarifa x unidades x días (+8 % si hay seguro), más variantes opcionales."""
+        dias = convertir_numero(duracion, "días")
+        if not 0 < dias <= self.MAX_DIAS:
+            raise ReservaInvalidaError(f"Los días deben estar entre 1 y {self.MAX_DIAS}.")
+        subtotal = self.tarifa_base * self.__cantidad * dias
+        if self.__seguro:
+            subtotal += subtotal * self.TASA_SEGURO
+        return self._aplicar_variantes(subtotal, self._extraer_variantes(args, kwargs))
+
+    def describir_servicio(self):
+        """Descripción en una línea."""
+        seg = "con seguro" if self.__seguro else "sin seguro"
+        estado = "Disponible" if self.disponible else "NO disponible"
+        return (f"[Equipo] {self.codigo} - {self.nombre} | Unid: {self.__cantidad} | "
+                f"{seg} | ${self.tarifa_base:,.0f}/unidad-día | {estado}")
+
+
+class AsesoriaEspecializada(Servicio):
+    """Asesoría profesional: tarifa por hora multiplicada según el nivel del asesor."""
+
+    MAX_HORAS = 8                   # Máximo de horas por sesión
+    # Multiplicador de la tarifa profesional según el nivel.
+    NIVELES = {"JUNIOR": 1.0, "SENIOR": 1.3, "EXPERTO": 1.6}
+
+    def __init__(self, codigo, nombre, tarifa_base, especialidad, nivel="Junior", disponible=True):
+        super().__init__(codigo, nombre, tarifa_base, disponible)
+        # La especialidad es obligatoria.
+        if especialidad is None or not str(especialidad).strip():
+            raise ParametroFaltanteError("La especialidad de la asesoría es obligatoria.")
+        self.__especialidad = str(especialidad).strip()
+        self.__nivel = str(nivel).strip().upper() if nivel else "JUNIOR"
+        self.validar_parametros()
+
+    def validar_parametros(self):
+        """El nivel debe ser Junior, Senior o Experto."""
+        if self.__nivel not in self.NIVELES:
+            raise ParametroInvalidoError("El nivel debe ser Junior, Senior o Experto.")
+
+    def calcular_costo(self, duracion, *args, **kwargs):
+        """Costo = tarifa x multiplicador de nivel x horas, más variantes opcionales."""
+        horas = convertir_numero(duracion, "horas")
+        if not 0 < horas <= self.MAX_HORAS:
+            raise ReservaInvalidaError(f"Las horas deben estar entre 1 y {self.MAX_HORAS}.")
+        subtotal = self.tarifa_base * self.NIVELES[self.__nivel] * horas
+        return self._aplicar_variantes(subtotal, self._extraer_variantes(args, kwargs))
+
+    def describir_servicio(self):
+        """Descripción en una línea."""
+        estado = "Disponible" if self.disponible else "NO disponible"
+        return (f"[Asesoría] {self.codigo} - {self.nombre} | {self.__especialidad} | "
+                f"Nivel: {self.__nivel.title()} | ${self.tarifa_base:,.0f}/hora | {estado}")
+
+
+class GestorServicios:
+    """Administra los servicios registrados (lista privada en memoria)."""
+
+    def __init__(self):
+        self.__servicios = []
+
+    def registrar_servicio(self, servicio):
+        """Agrega un servicio ya construido; evita códigos duplicados."""
+        if any(s.codigo == servicio.codigo for s in self.__servicios):
+            raise OperacionNoPermitidaError(f"Ya existe un servicio con código '{servicio.codigo}'.")
+        self.__servicios.append(servicio)
+        logger.info(f"Servicio registrado: {servicio.describir_servicio()}")
+        return "Servicio registrado correctamente."
+
+    def crear_servicio(self, tipo, codigo, nombre, tarifa_base, extra1="", extra2="", opcion=False):
+        """Fábrica de servicios a partir de datos de texto (los que llegan de la interfaz).
+
+        tipo: 'sala' | 'equipo' | 'asesoria'
+          sala     -> extra1 = capacidad,  opcion = audiovisual
+          equipo   -> extra1 = cantidad,   opcion = seguro
+          asesoria -> extra1 = especialidad, extra2 = nivel
+        """
+        try:
+            if tipo == "sala":
+                servicio = ReservaSala(codigo, nombre, tarifa_base, extra1, opcion)
+            elif tipo == "equipo":
+                servicio = AlquilerEquipo(codigo, nombre, tarifa_base, extra1, opcion)
+            elif tipo == "asesoria":
+                servicio = AsesoriaEspecializada(codigo, nombre, tarifa_base, extra1, extra2)
+            else:
+                raise ParametroInvalidoError(f"Tipo de servicio desconocido: '{tipo}'.")
+            mensaje = self.registrar_servicio(servicio)
+        except SIGCSRError as error:
+            # Se registra el fallo y se relanza para que lo gestione quien llamó.
+            logger.error(f"Creación de servicio fallida (tipo '{tipo}', código '{codigo}'): "
+                         f"{type(error).__name__}: {error}")
+            raise
+        else:
+            return mensaje
+
+    def buscar_servicio(self, codigo):
+        """Devuelve el servicio con ese código o lanza ServicioNoDisponibleError."""
+        for servicio in self.__servicios:
+            if servicio.codigo == str(codigo).strip():
+                return servicio
+        raise ServicioNoDisponibleError(f"El servicio '{codigo}' no existe.")
+
+    def listar_servicios(self):
+        """Devuelve una copia de la lista de servicios."""
+        return self.__servicios.copy()
 
 
