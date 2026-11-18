@@ -152,6 +152,84 @@ class Entidad(ABC):
         pass
 
 
+# MÓDULO DE CLIENTES + LOGS
+
+
+class Cliente(Entidad):
+    """Cliente de Software FJ con datos encapsulados y validados."""
+
+    def __init__(self, identificador, nombre, cedula, correo):
+        super().__init__(identificador)
+
+        # Robin:______________Validacion de datos del cliente
+        if not str(identificador).strip():
+            raise ValueError("Insertar datos para validar.")
+
+        if not nombre.strip():
+            raise ValueError("Insertar nombre.")
+
+        if not str(cedula).strip().isdigit():
+            raise ValueError("La cedula debe contener solo números.")
+
+        if not correo.strip() or "@" not in correo or "." not in correo:
+            raise ValueError("El correo electronico no es valido.")
+
+        # Atributos privados (encapsulamiento).
+        self.__nombre = nombre
+        self.__cc = cedula
+        self.__correo = correo
+
+    def obtener_nombre(self):
+        """Getter del nombre (necesario para mostrar datos en las reservas)."""
+        return self.__nombre
+
+    def mostrar_informacion(self):
+        """Devuelve los datos del cliente en varias líneas."""
+        return (
+            f"Cliente ID: {self.obtener_identificador()}\n"
+            f"Nombre: {self.__nombre}\n"
+            f"Cedula: {self.__cc}\n"
+            f"Correo: {self.__correo}"
+        )
+
+
+# Robin:_________Gestion de clientes.
+class GestorClientes:
+    """Almacena y administra los clientes en una lista privada (memoria)."""
+
+    def __init__(self):
+        self.__clientes = []
+
+    def registrar_cliente(self, identificador, nombre, cedula, correo):
+        """Registra un cliente nuevo. Lanza ValueError si hay duplicado o datos inválidos."""
+        try:
+            # Se evita el duplicado por identificador.
+            for cliente in self.__clientes:
+                if str(cliente.obtener_identificador()) == str(identificador):
+                    raise ValueError("El cliente ya existe.")
+            # La construcción valida todos los datos (puede lanzar ValueError).
+            nuevo_cliente = Cliente(identificador, nombre, cedula, correo)
+        except ValueError as error:
+            # Se deja constancia en el log y se relanza para que la interfaz lo muestre.
+            logger.error(f"Registro de cliente fallido (ID '{identificador}'): {error}")
+            raise
+        else:
+            # Solo si no hubo errores se agrega a la lista y se registra el evento.
+            self.__clientes.append(nuevo_cliente)
+            logger.info(f"Cliente registrado correctamente: ID {identificador} - {nombre}")
+            return "Cliente registrado correctamente."
+
+    def listar_clientes(self):
+        """Devuelve una copia de la lista (protege la lista interna)."""
+        return self.__clientes.copy()
+
+    def buscar_cliente(self, identificador):
+        """Busca un cliente por ID; lanza ReservaInvalidaError si no existe."""
+        for cliente in self.__clientes:
+            if str(cliente.obtener_identificador()) == str(identificador).strip():
+                return cliente
+        raise ReservaInvalidaError(f"No existe un cliente con ID '{identificador}'.")
+
 
 
 
