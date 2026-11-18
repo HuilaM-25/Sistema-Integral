@@ -1,0 +1,100 @@
+2026-11-18 11:49:10 | INFO  | Sistema SIGCSR iniciado.
+2026-11-18 11:51:34 | INFO  | Inicio de sesión exitoso del usuario 'UNAD'.
+2026-11-18 11:53:12 | INFO  | ===== INICIO DE LA SIMULACIÓN DE PRUEBAS =====
+2026-11-18 11:53:12 | INFO  | Cliente registrado correctamente: ID C001 - Ana Pérez
+2026-11-18 11:53:12 | INFO  | [Simulación] Cliente válido (Ana): OK
+2026-11-18 11:53:12 | ERROR | Registro de cliente fallido (ID 'C002'): La cedula debe contener solo números.
+2026-11-18 11:53:12 | ERROR | [Simulación] Cliente inválido (cédula con letras): ValueError: La cedula debe contener solo números.
+2026-11-18 11:53:12 | ERROR | Registro de cliente fallido (ID 'C001'): Error el cliente ya existe.
+2026-11-18 11:53:12 | ERROR | [Simulación] Cliente duplicado (ID repetido): ValueError: Error el cliente ya existe.
+2026-11-18 11:53:12 | INFO  | Cliente registrado correctamente: ID C002 - Luis Gómez
+2026-11-18 11:53:12 | INFO  | [Simulación] Cliente válido (Luis): OK
+2026-11-18 11:53:12 | INFO  | Servicio registrado: [Sala] S001 - Sala Ejecutiva | Cap: 20 | con audiovisual | $80,000/hora | Disponible
+2026-11-18 11:53:12 | INFO  | [Simulación] ReservaSala válida: OK
+2026-11-18 11:53:12 | ERROR | Creación de servicio fallida (tipo 'sala', código 'S002'): ParametroInvalidoError: La capacidad debe estar entre 1 y 200 personas.
+2026-11-18 11:53:12 | ERROR | [Simulación] ReservaSala con capacidad inválida (0): ParametroInvalidoError: La capacidad debe estar entre 1 y 200 personas.
+2026-11-18 11:53:12 | INFO  | Servicio registrado: [Equipo] E001 - Videobeam | Unid: 3 | con seguro | $30,000/unidad-día | Disponible
+2026-11-18 11:53:12 | INFO  | [Simulación] AlquilerEquipo válido: OK
+2026-11-18 11:53:12 | ERROR | Creación de servicio fallida (tipo 'equipo', código 'E002'): ParametroFaltanteError: Falta el parámetro obligatorio: cantidad.
+2026-11-18 11:53:12 | ERROR | [Simulación] AlquilerEquipo con cantidad faltante: ParametroFaltanteError: Falta el parámetro obligatorio: cantidad.
+2026-11-18 11:53:12 | INFO  | Servicio registrado: [Asesoría] A001 - Asesoría Cloud | Computación en la nube | Nivel: Senior | $120,000/hora | Disponible
+2026-11-18 11:53:12 | INFO  | [Simulación] AsesoriaEspecializada válida: OK
+2026-11-18 11:53:12 | ERROR | Creación de servicio fallida (tipo 'asesoria', código 'A002'): ParametroFaltanteError: La especialidad de la asesoría es obligatoria.
+2026-11-18 11:53:12 | ERROR | [Simulación] AsesoriaEspecializada sin especialidad: ParametroFaltanteError: La especialidad de la asesoría es obligatoria.
+2026-11-18 11:53:12 | INFO  | Reserva R001 creada (Pendiente) para cliente C001.
+2026-11-18 11:53:12 | INFO  | [Simulación] Reserva exitosa (Ana, sala, 3 h, con IVA): OK
+2026-11-18 11:53:12 | INFO  | Procesando reserva R001...
+2026-11-18 11:53:12 | INFO  | Reserva R001 procesada. Total: $328,440.00
+2026-11-18 11:53:12 | INFO  | Fin del procesamiento de la reserva R001.
+2026-11-18 11:53:12 | INFO  | Reserva R001 CONFIRMADA.
+2026-11-18 11:53:12 | INFO  | [Simulación] Confirmar reserva R001: OK
+2026-11-18 11:53:12 | ERROR | Creación de reserva fallida: ServicioNoDisponibleError: El servicio 'E001' no está disponible.
+2026-11-18 11:53:12 | ERROR | [Simulación] Reserva con servicio no disponible: ServicioNoDisponibleError: El servicio 'E001' no está disponible.
+2026-11-18 11:53:12 | ERROR | Creación de reserva fallida: ParametroFaltanteError: Falta el parámetro obligatorio: duración.
+2026-11-18 11:53:12 | ERROR | [Simulación] Reserva con duración faltante: ParametroFaltanteError: Falta el parámetro obligatorio: duración.
+2026-11-18 11:53:12 | INFO  | Reserva R002 creada (Pendiente) para cliente C002.
+2026-11-18 11:53:12 | INFO  | [Simulación] Reserva con duración fuera de rango (50 h): OK
+2026-11-18 11:53:12 | INFO  | Procesando reserva R002...
+2026-11-18 11:53:12 | ERROR | Reserva R002 no procesada: ReservaInvalidaError: Las horas deben estar entre 1 y 12.
+2026-11-18 11:53:12 | INFO  | Fin del procesamiento de la reserva R002.
+2026-11-18 11:53:12 | ERROR | Confirmación fallida de R002: ReservaInvalidaError: Las horas deben estar entre 1 y 12.
+2026-11-18 11:53:12 | ERROR | [Simulación] Confirmar R002 (debe fallar por duración): ReservaInvalidaError: Las horas deben estar entre 1 y 12.
+2026-11-18 11:53:12 | INFO  | Reserva R002 CANCELADA.
+2026-11-18 11:53:12 | INFO  | [Simulación] Cancelar reserva R002: OK
+2026-11-18 11:53:12 | ERROR | Cancelación fallida de R002: La reserva ya estaba cancelada.
+2026-11-18 11:53:12 | ERROR | [Simulación] Cancelar R002 por segunda vez: OperacionNoPermitidaError: La reserva ya estaba cancelada.
+2026-11-18 11:53:12 | ERROR | Creación de reserva fallida: ReservaInvalidaError: No existe un cliente con ID 'C999'.
+2026-11-18 11:53:12 | ERROR | [Simulación] Reserva con cliente inexistente: ReservaInvalidaError: No existe un cliente con ID 'C999'.
+2026-11-18 11:53:12 | INFO  | [Simulación] Cálculo con variantes (sobrecarga IVA/descuento/recargo): OK
+2026-11-18 11:53:12 | INFO  | ===== FIN DE LA SIMULACIÓN: 10 exitosas, 10 errores controlados =====
+2026-11-18 11:54:33 | INFO  | Sistema cerrado por el usuario.
+2026-11-18 11:59:32 | INFO  | Sistema SIGCSR iniciado.
+2026-11-18 11:59:40 | INFO  | Inicio de sesión exitoso del usuario 'UNAD'.
+2026-11-18 12:08:50 | INFO  | ===== INICIO DE LA SIMULACIÓN DE PRUEBAS =====
+2026-11-18 12:08:50 | INFO  | Cliente registrado correctamente: ID C001 - Ana Pérez
+2026-11-18 12:08:50 | INFO  | [Simulación] Cliente válido (Ana): OK
+2026-11-18 12:08:50 | ERROR | Registro de cliente fallido (ID 'C002'): La cedula debe contener solo números.
+2026-11-18 12:08:50 | ERROR | [Simulación] Cliente inválido (cédula con letras): ValueError: La cedula debe contener solo números.
+2026-11-18 12:08:50 | ERROR | Registro de cliente fallido (ID 'C001'): Error el cliente ya existe.
+2026-11-18 12:08:50 | ERROR | [Simulación] Cliente duplicado (ID repetido): ValueError: Error el cliente ya existe.
+2026-11-18 12:08:50 | INFO  | Cliente registrado correctamente: ID C002 - Luis Gómez
+2026-11-18 12:08:50 | INFO  | [Simulación] Cliente válido (Luis): OK
+2026-11-18 12:08:50 | INFO  | Servicio registrado: [Sala] S001 - Sala Ejecutiva | Cap: 20 | con audiovisual | $80,000/hora | Disponible
+2026-11-18 12:08:50 | INFO  | [Simulación] ReservaSala válida: OK
+2026-11-18 12:08:50 | ERROR | Creación de servicio fallida (tipo 'sala', código 'S002'): ParametroInvalidoError: La capacidad debe estar entre 1 y 200 personas.
+2026-11-18 12:08:50 | ERROR | [Simulación] ReservaSala con capacidad inválida (0): ParametroInvalidoError: La capacidad debe estar entre 1 y 200 personas.
+2026-11-18 12:08:50 | INFO  | Servicio registrado: [Equipo] E001 - Videobeam | Unid: 3 | con seguro | $30,000/unidad-día | Disponible
+2026-11-18 12:08:50 | INFO  | [Simulación] AlquilerEquipo válido: OK
+2026-11-18 12:08:50 | ERROR | Creación de servicio fallida (tipo 'equipo', código 'E002'): ParametroFaltanteError: Falta el parámetro obligatorio: cantidad.
+2026-11-18 12:08:50 | ERROR | [Simulación] AlquilerEquipo con cantidad faltante: ParametroFaltanteError: Falta el parámetro obligatorio: cantidad.
+2026-11-18 12:08:50 | INFO  | Servicio registrado: [Asesoría] A001 - Asesoría Cloud | Computación en la nube | Nivel: Senior | $120,000/hora | Disponible
+2026-11-18 12:08:50 | INFO  | [Simulación] AsesoriaEspecializada válida: OK
+2026-11-18 12:08:50 | ERROR | Creación de servicio fallida (tipo 'asesoria', código 'A002'): ParametroFaltanteError: La especialidad de la asesoría es obligatoria.
+2026-11-18 12:08:50 | ERROR | [Simulación] AsesoriaEspecializada sin especialidad: ParametroFaltanteError: La especialidad de la asesoría es obligatoria.
+2026-11-18 12:08:50 | INFO  | Reserva R001 creada (Pendiente) para cliente C001.
+2026-11-18 12:08:50 | INFO  | [Simulación] Reserva exitosa (Ana, sala, 3 h, con IVA): OK
+2026-11-18 12:08:50 | INFO  | Procesando reserva R001...
+2026-11-18 12:08:50 | INFO  | Reserva R001 procesada. Total: $328,440.00
+2026-11-18 12:08:50 | INFO  | Fin del procesamiento de la reserva R001.
+2026-11-18 12:08:50 | INFO  | Reserva R001 CONFIRMADA.
+2026-11-18 12:08:50 | INFO  | [Simulación] Confirmar reserva R001: OK
+2026-11-18 12:08:50 | ERROR | Creación de reserva fallida: ServicioNoDisponibleError: El servicio 'E001' no está disponible.
+2026-11-18 12:08:50 | ERROR | [Simulación] Reserva con servicio no disponible: ServicioNoDisponibleError: El servicio 'E001' no está disponible.
+2026-11-18 12:08:50 | ERROR | Creación de reserva fallida: ParametroFaltanteError: Falta el parámetro obligatorio: duración.
+2026-11-18 12:08:50 | ERROR | [Simulación] Reserva con duración faltante: ParametroFaltanteError: Falta el parámetro obligatorio: duración.
+2026-11-18 12:08:50 | INFO  | Reserva R002 creada (Pendiente) para cliente C002.
+2026-11-18 12:08:50 | INFO  | [Simulación] Reserva con duración fuera de rango (50 h): OK
+2026-11-18 12:08:50 | INFO  | Procesando reserva R002...
+2026-11-18 12:08:50 | ERROR | Reserva R002 no procesada: ReservaInvalidaError: Las horas deben estar entre 1 y 12.
+2026-11-18 12:08:50 | INFO  | Fin del procesamiento de la reserva R002.
+2026-11-18 12:08:50 | ERROR | Confirmación fallida de R002: ReservaInvalidaError: Las horas deben estar entre 1 y 12.
+2026-11-18 12:08:50 | ERROR | [Simulación] Confirmar R002 (debe fallar por duración): ReservaInvalidaError: Las horas deben estar entre 1 y 12.
+2026-11-18 12:08:50 | INFO  | Reserva R002 CANCELADA.
+2026-11-18 12:08:50 | INFO  | [Simulación] Cancelar reserva R002: OK
+2026-11-18 12:08:50 | ERROR | Cancelación fallida de R002: La reserva ya estaba cancelada.
+2026-11-18 12:08:50 | ERROR | [Simulación] Cancelar R002 por segunda vez: OperacionNoPermitidaError: La reserva ya estaba cancelada.
+2026-11-18 12:08:50 | ERROR | Creación de reserva fallida: ReservaInvalidaError: No existe un cliente con ID 'C999'.
+2026-11-18 12:08:50 | ERROR | [Simulación] Reserva con cliente inexistente: ReservaInvalidaError: No existe un cliente con ID 'C999'.
+2026-11-18 12:08:50 | INFO  | [Simulación] Cálculo con variantes (sobrecarga IVA/descuento/recargo): OK
+2026-11-18 12:08:50 | INFO  | ===== FIN DE LA SIMULACIÓN: 10 exitosas, 10 errores controlados =====
+2026-11-18 12:08:57 | INFO  | Sistema cerrado por el usuario.

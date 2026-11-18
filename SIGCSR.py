@@ -9,7 +9,7 @@
 # Descripción general del aplicativo:
 #   Aplicación de escritorio (Tkinter) que gestiona clientes, servicios y reservas
 #   completamente en memoria (objetos y listas). No usa motores de bases de datos;
-#   el único archivo que se escribe es el registro de eventos "sistema_logs.txt".
+#   el único archivo que se escribe es el registro de eventos "registros_actividad_unad.txt".
 
 import os                                   # Para ubicar el archivo de logs junto al script
 import math                                 # Para detectar valores no finitos (nan / inf)
@@ -19,7 +19,7 @@ from datetime import datetime               # Fecha y hora para los logs
 from abc import ABC, abstractmethod         # Soporte para clases abstractas
 
 
-# SISTEMA DE LOGS (archivo plano sistema_logs.txt)
+# SISTEMA DE LOGS (archivo plano registros_actividad_unad.txt)
 
 
 class GestorLogs:
@@ -29,7 +29,7 @@ class GestorLogs:
     archivo, lo informa por consola y continúa (el programa no debe detenerse).
     """
 
-    def __init__(self, nombre_archivo="sistema_logs.txt"):
+    def __init__(self, nombre_archivo="registros_actividad_unad.txt"):
         # Ruta absoluta: el archivo se crea en la misma carpeta que este script.
         carpeta = os.path.dirname(os.path.abspath(__file__))
         self.__ruta = os.path.join(carpeta, nombre_archivo)
@@ -700,7 +700,7 @@ def ejecutar_simulacion():
 
     Usa gestores NUEVOS y aislados para que la simulación sea repetible y no
     mezcle datos de prueba con los del usuario. Todo error se captura, se muestra
-    y se escribe en sistema_logs.txt sin interrumpir el programa.
+    y se escribe en registros_actividad_unad.txt sin interrumpir el programa.
     """
     logger.info("===== INICIO DE LA SIMULACIÓN DE PRUEBAS =====")
     gc = GestorClientes()
@@ -1045,7 +1045,7 @@ def abrir_ventana_simulacion():
         logger.error(f"Fallo general en la simulación: {error}")
         lineas = [f"Error general controlado: {error}"]
     texto.insert(tk.END, "\n".join(lineas))
-    texto.insert(tk.END, "\n\nLos detalles quedaron registrados en 'sistema_logs.txt'.")
+    texto.insert(tk.END, "\n\nLos detalles quedaron registrados en 'registros_actividad_unad.txt'.")
     texto.config(state="disabled")      # Solo lectura
 
 
