@@ -134,7 +134,7 @@ class Usuario:
         return usuario_ingresado == self._usuario and password_ingresada == self._password
 
 
-# Robin:________________________Clase abstracta sistema
+# Clase abstracta sistema
 class Entidad(ABC):
     """Clase abstracta base de todas las entidades del sistema (clientes, servicios, reservas)."""
 
@@ -161,9 +161,9 @@ class Cliente(Entidad):
     def __init__(self, identificador, nombre, cedula, correo):
         super().__init__(identificador)
 
-        # Robin:______________Validacion de datos del cliente
+        #Validacion de datos del cliente
         if not str(identificador).strip():
-            raise ValueError("Insertar datos para validar.")
+            raise ValueError("Insertar datos para poder validar.")
 
         if not nombre.strip():
             raise ValueError("Insertar nombre.")
@@ -193,7 +193,7 @@ class Cliente(Entidad):
         )
 
 
-# Robin:_________Gestion de clientes.
+# Gestion de clientes.
 class GestorClientes:
     """Almacena y administra los clientes en una lista privada (memoria)."""
 
@@ -206,7 +206,7 @@ class GestorClientes:
             # Se evita el duplicado por identificador.
             for cliente in self.__clientes:
                 if str(cliente.obtener_identificador()) == str(identificador):
-                    raise ValueError("El cliente ya existe.")
+                    raise ValueError("Error el cliente ya existe.")
             # La construcción valida todos los datos (puede lanzar ValueError).
             nuevo_cliente = Cliente(identificador, nombre, cedula, correo)
         except ValueError as error:
@@ -682,7 +682,7 @@ class GestorReservas:
 
 
 # Gestores globales usados por la interfaz gráfica.
-# Robin:__________________Ventana Abministrar clientes.
+# Ventana Abministrar clientes.
 gestor_clientes = GestorClientes()
 gestor_servicios = GestorServicios()
 gestor_reservas = GestorReservas(gestor_clientes, gestor_servicios)
@@ -821,7 +821,7 @@ def abrir_ventana_clientes():
     entrada_correo = tk.Entry(ventana_clientes)
     entrada_correo.pack(pady=5)
 
-    # Robin:________________________Funcion para registrar clientes
+    # Funcion para registrar clientes
     def registrar():
         """Registra el cliente y limpia los campos si todo salió bien."""
         ok = ejecutar_accion_ui("Registro", lambda: gestor_clientes.registrar_cliente(
@@ -830,7 +830,7 @@ def abrir_ventana_clientes():
             for entrada in (entrada_id, entrada_nombre, entrada_cedula, entrada_correo):
                 entrada.delete(0, tk.END)
 
-    # Robin:_______________Funcion de lista de clientes
+    # Funcion de lista de clientes
     def consultar():
         """Muestra los clientes registrados en el Listbox."""
         lista_clientes.delete(0, tk.END)
@@ -846,7 +846,7 @@ def abrir_ventana_clientes():
     tk.Button(ventana_clientes, text="Registrar Cliente", width=25, command=registrar).pack(pady=10)
     tk.Button(ventana_clientes, text="Consultar Clientes", width=25, command=consultar).pack(pady=5)
 
-    # Robin:_______________Mostrar clientes.
+    # Mostrar clientes.
     lista_clientes = tk.Listbox(ventana_clientes, width=65, height=8)
     lista_clientes.pack(pady=15)
 
