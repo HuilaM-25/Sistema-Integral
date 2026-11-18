@@ -1049,7 +1049,7 @@ def abrir_ventana_simulacion():
     texto.config(state="disabled")      # Solo lectura
 
 
-# Robin:________________________Funcion para abrir el sistema
+# Funcion para abrir el sistema
 def abrir_sistema():
     """Abre el menú principal con acceso a todos los módulos."""
     ventana_principal = tk.Toplevel(ventana)
@@ -1057,7 +1057,7 @@ def abrir_sistema():
     ventana_principal.geometry("600x500")
 
     tk.Label(ventana_principal, text="SISTEMA INTEGRAL", font=("Arial", 16, "bold")).pack(pady=12)
-    tk.Label(ventana_principal, text="S.I.G.C.S.R", font=("Arial", 16, "bold")).pack(pady=12)
+    tk.Label(ventana_principal, text="S.I.G.C.S.R GRUPO 213023_456", font=("Arial", 16, "bold")).pack(pady=12)
 
     tk.Button(ventana_principal, text="Clientes", width=25, command=abrir_ventana_clientes).pack(pady=10)
     tk.Button(ventana_principal, text="Servicios", width=25, command=abrir_ventana_servicios).pack(pady=10)
@@ -1072,7 +1072,7 @@ def abrir_sistema():
     ventana_principal.protocol("WM_DELETE_WINDOW", cerrar_todo)
 
 
-# Robin:________________________Funcion para iniciar sesion
+# Funcion para iniciar sesion
 def iniciar_sesion():
     """Valida las credenciales y abre el sistema si son correctas."""
     usuario = entrada_usuario.get()
